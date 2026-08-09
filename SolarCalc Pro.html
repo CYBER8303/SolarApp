@@ -1,0 +1,2142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SolarCalc Pro - Software de Ingeniería Fotovoltaica Completo</title>
+    
+    <!-- Librerías Externas para Gráficos y Exportación -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --bg-primary: #f4f6f9;
+            --bg-sidebar: #1e1e2f;
+            --text-main: #333;
+            --text-light: #fff;
+            --accent: #f39c12;
+            --accent-hover: #d35400;
+            --card-bg: #fff;
+            --border-color: #e0e0e0;
+            --danger: #e74c3c;
+            --success: #2ecc71;
+            --info: #2980b9;
+            --gray: #7f8c8d;
+            --solar-gold: #f1c40f;
+            --mppt-blue: #2980b9;
+            --warning: #e67e22;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background-color: var(--bg-sidebar);
+            color: var(--text-light);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .logo h2 {
+            font-size: 24px;
+            margin-bottom: 30px;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .logo span {
+            color: var(--accent);
+        }
+
+        .menu {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            color: #a0a0b0;
+            padding: 12px 15px;
+            text-align: left;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .menu-btn:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-light);
+        }
+
+        .menu-btn.active {
+            background-color: var(--accent);
+            color: var(--text-light);
+            font-weight: 600;
+        }
+
+        /* Contenido Principal */
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .main-header {
+            background-color: var(--card-bg);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .main-header h1 {
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        .user-profile {
+            font-weight: 600;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .content-panel {
+            padding: 30px 40px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        /* Componentes de Interfaz */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            max-width: 1100px;
+            margin: 0 auto 25px auto;
+        }
+
+        .card h3, .card h2 {
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--bg-primary);
+            padding-bottom: 12px;
+            font-size: 18px;
+            color: var(--bg-sidebar);
+        }
+
+        .card h2 {
+            border-bottom: 3px solid var(--bg-primary);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            background-color: #fcfcfd;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            height: 80px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            background-color: #fff;
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .grid-3col {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .grid-4col {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .grid-3col,
+            .grid-4col,
+            .grid-inputs {
+                grid-template-columns: 1fr;
+            }
+            
+            .results-grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grid-2col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            padding: 6px 10px;
+            font-size: 12px;
+            width: auto;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+        }
+
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+
+        /* Tabla de Cargas */
+        .table-container {
+            margin-top: 25px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--bg-primary);
+            color: #333;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: #fcfcfd;
+        }
+
+        /* KPIs */
+        .kpi-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .kpi-box {
+            background: #f8f9fa;
+            border-left: 5px solid var(--accent);
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .kpi-box.kpi-kwh {
+            border-left-color: var(--success);
+        }
+
+        .kpi-box.kpi-vida {
+            border-left-color: var(--warning);
+        }
+
+        .kpi-box p {
+            font-size: 13px;
+            color: #666;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .kpi-box h3 {
+            font-size: 24px;
+            color: #2c3e50;
+            margin-top: 5px;
+        }
+
+        /* Gráficos */
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            gap: 30px;
+            margin-top: 25px;
+        }
+
+        .chart-box {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Paneles de Resultados */
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .results-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .results-grid-4 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .res-box {
+            background: #f8f9fa;
+            border-left: 5px solid var(--info);
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .res-box.baterias {
+            border-left-color: var(--success);
+        }
+
+        .res-box.duracion {
+            border-left-color: var(--warning);
+        }
+
+        .res-box.autonomia {
+            border-left-color: #e91e63;
+        }
+
+        .res-box.config-bat {
+            border-left-color: #16a085;
+        }
+
+        .res-box.mppt {
+            border-left-color: var(--mppt-blue);
+        }
+
+        .res-box.cables {
+            border-left-color: var(--info);
+        }
+
+        .res-box.estructura {
+            border-left-color: var(--gray);
+        }
+
+        .res-box.analisis-paneles {
+            border-left-color: var(--solar-gold);
+        }
+
+        .res-box h4 {
+            margin-bottom: 15px;
+            color: var(--bg-sidebar);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+
+        .res-box p {
+            margin-bottom: 10px;
+            font-size: 14.5px;
+            color: #444;
+        }
+
+        .res-box strong {
+            color: #000;
+            font-weight: 700;
+        }
+
+        .highlight {
+            background-color: #fef9e7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .highlight-success {
+            background-color: #e8f8f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .highlight-blue {
+            background-color: #eaf2f8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .highlight-warning {
+            background-color: #fdeaa8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .highlight-teal {
+            background-color: #d5f4e6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .highlight-pink {
+            background-color: #f8d7f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .highlight-danger {
+            background-color: #fadbd8;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #c0392b;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            margin-top: 5px;
+        }
+
+        .bg-danger {
+            background-color: var(--danger);
+        }
+
+        .bg-info {
+            background-color: var(--info);
+        }
+
+        .bg-gray {
+            background-color: var(--gray);
+        }
+
+        .bg-warning {
+            background-color: var(--warning);
+        }
+
+        .bg-teal {
+            background-color: #16a085;
+        }
+
+        .bg-success {
+            background-color: var(--success);
+        }
+
+        .bg-pink {
+            background-color: #e91e63;
+        }
+
+        /* Tabla de durabilidad */
+        .durabilidad-tabla {
+            background: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .durabilidad-tabla h5 {
+            color: var(--bg-sidebar);
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .durabilidad-tabla p {
+            margin: 8px 0;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .durabilidad-tabla strong {
+            color: #000;
+        }
+
+        /* Tabla de baterías */
+        .tabla-baterias {
+            background: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .tabla-baterias h5 {
+            color: var(--bg-sidebar);
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .tabla-baterias table {
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .tabla-baterias th {
+            background-color: #e8f4f8;
+            color: #333;
+            font-weight: 600;
+        }
+
+        /* Tabla de autonomía */
+        .tabla-autonomia {
+            background: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .tabla-autonomia h5 {
+            color: var(--bg-sidebar);
+            margin-bottom: 10px;
+            font-size: 14px;
+            border-bottom: 2px solid #e91e63;
+            padding-bottom: 8px;
+        }
+
+        .tabla-autonomia p {
+            margin: 8px 0;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .tabla-autonomia strong {
+            color: #e91e63;
+            font-weight: 700;
+        }
+
+        /* Análisis de capacidad */
+        .analisis-capacidad {
+            background: #f8f9fa;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .analisis-capacidad h5 {
+            color: var(--bg-sidebar);
+            margin-bottom: 12px;
+            font-size: 14px;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 8px;
+        }
+
+        .capacidad-item {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .capacidad-item:last-child {
+            border-bottom: none;
+        }
+
+        .capacidad-label {
+            font-weight: 600;
+            color: #555;
+            font-size: 13px;
+        }
+
+        .capacidad-valor {
+            font-size: 13px;
+            color: #333;
+        }
+
+        .capacidad-valor.ok {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .capacidad-valor.error {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        .capacidad-valor.warning {
+            color: var(--warning);
+            font-weight: 600;
+        }
+
+        .info-badge {
+            display: inline-block;
+            background-color: #e8f4f8;
+            border-left: 3px solid var(--info);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #2980b9;
+            margin-top: 8px;
+        }
+
+        /* Reporte Final */
+        .reporte-container {
+            margin-top: 30px;
+            border: 2px dashed var(--border-color);
+            padding: 25px;
+            background: #fafafa;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .reporte-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--bg-sidebar);
+            padding-bottom: 15px;
+        }
+
+        .reporte-seccion {
+            margin-bottom: 20px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #eee;
+        }
+
+        .reporte-seccion h4 {
+            color: var(--info);
+            margin-bottom: 10px;
+            font-size: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 4px;
+        }
+
+        .reporte-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .app-container {
+                flex-direction: column;
+            }
+
+            .sidebar,
+            .main-header,
+            .menu-btn,
+            label,
+            input,
+            select,
+            textarea,
+            .btn,
+            h2,
+            h3,
+            .grid-2col,
+            .grid-3col {
+                display: none !important;
+            }
+
+            .content-panel {
+                padding: 0;
+            }
+
+            .card {
+                box-shadow: none;
+                padding: 0;
+                max-width: 100%;
+                margin: 0;
+            }
+
+            .reporte-container {
+                display: block !important;
+                border: none;
+                background: white;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Barra Lateral de Navegación -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>SolarCalc <span>Pro</span></h2>
+            </div>
+            <nav class="menu">
+                <button class="menu-btn active" onclick="switchTab('datos', event)">📝 Datos del Proyecto</button>
+                <button class="menu-btn" onclick="switchTab('consumos', event)">⚡ Cálculo de Consumos</button>
+                <button class="menu-btn" onclick="switchTab('inversor', event)">🔌 Inversor y Baterías</button>
+                <button class="menu-btn" onclick="switchTab('paneles', event)">☀️ Paneles Disponibles</button>
+                <button class="menu-btn" onclick="switchTab('ingenieria', event)">🛡️ Conductores y Protecciones</button>
+                <button class="menu-btn" onclick="switchTab('resultados', event)">📊 Presupuesto y Exportar</button>
+            </nav>
+        </aside>
+
+        <!-- Contenido Principal -->
+        <main class="main-content">
+            <header class="main-header">
+                <h1 id="tab-title">Datos del Proyecto</h1>
+                <div class="user-profile">Ingeniería Fotovoltaica</div>
+            </header>
+
+            <section class="content-panel">
+                
+                <!-- MÓDULO 1: DATOS DEL PROYECTO -->
+                <div id="tab-datos" class="tab-content active">
+                    <div class="card">
+                        <h3>Información General</h3>
+                        <form id="form-datos">
+                            <div class="form-group">
+                                <label for="cliente">Nombre del Cliente / Empresa</label>
+                                <input type="text" id="cliente" placeholder="Ej. Juan Pérez">
+                            </div>
+                            <div class="form-group">
+                                <label for="direccion">Dirección del Proyecto</label>
+                                <input type="text" id="direccion" placeholder="Ej. La Habana, Cuba">
+                            </div>
+                                 <div class="form-group">
+                                     <label for="moneda">Moneda del Proyecto</label>
+                                    <select id="moneda" onchange="actualizarMonedaReporte()">
+                                       <option value="USD">USD ($) - Dólares</option>
+                                       <option value="CUP">CUP ($) - Pesos Cubanos</option>
+                                       <option value="EUR">EUR (€) - Euros</option>
+                                    </select>
+                            </div>
+                            <div class="grid-2col">
+                                <div class="form-group">
+                                    <label for="tipo_inst">Tipo de Instalación</label>
+                                    <select id="tipo_inst">
+                                        <option value="aislada">Aislada de la Red (Off-Grid)</option>
+                                        <option value="interconectada">Interconectada (On-Grid)</option>
+                                        <option value="hibrida">Híbrida</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="sistema">Sistema Eléctrico</label>
+                                    <select id="sistema" onchange="actualizarVoltajes()">
+                                        <option value="monofasico">Monofásico</option>
+                                        <option value="trifasico">Trifásico</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid-2col">
+                                <div class="form-group">
+                                    <label for="voltaje">Voltaje de Operación (AC)</label>
+                                    <select id="voltaje">
+                                        <!-- Se llena dinámicamente -->
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="frecuencia">Frecuencia del Sistema</label>
+                                    <select id="frecuencia">
+                                        <option value="60">60 Hz</option>
+                                        <option value="50">50 Hz</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- MÓDULO 2: ANÁLISIS Y CÁLCULO DINÁMICO DE CONSUMOS -->
+                <div id="tab-consumos" class="tab-content">
+                    <div class="card">
+                        <h2>⚡ Módulo 2: Análisis y Cálculo Dinámico de Consumos</h2>
+                        
+                        <!-- Formulario Avanzado para Entrada de Cargas -->
+                        <div class="grid-inputs">
+                            <div class="form-group">
+            <label for="eq_nombre">Descripción del Equipo Eléctrico</label>
+            <input type="text" id="eq_nombre" list="lista-electrodomesticos" placeholder="Selecciona o escribe un equipo..." class="form-control">
+
+                   <datalist id="lista-electrodomesticos">
+                         <!-- Refrigeración y Climatización -->
+                              <option value="Refrigerador / Nevera Standard">
+                              <option value="Refrigerador Inverter">
+                              <option value="Congelador Horizontal / Freezer">
+                              <option value="Aire Acondicionado 9,000 BTU (Inverter)">
+                              <option value="Aire Acondicionado 12,000 BTU (Standard)">
+                              <option value="Aire Acondicionado 18,000 BTU">
+                              <option value="Ventilador de Techo / Pie">
+                              <option value="Climatizador Evaporativo">
+
+                         <!-- Iluminación -->
+                              <option value="Bombillo LED (9W - 12W)">
+                              <option value="Lámpara LED Exterior / Reflector">
+                              <option value="Tubo Fluorescente / LED">
+                              <option value="Tira LED de Ambientación">
+
+                         <!-- Cocina y Eléctricos Pequeños -->
+                              <option value="Microondas (800W - 1200W)">
+                              <option value="Freidora de Aire (Air Fryer)">
+                              <option value="Cafetera Eléctrica de Goteo">
+                              <option value="Cafetera Express / Cápsulas">
+                              <option value="Licuadora / Batidora">
+                              <option value="Horno Eléctrico Pequeño">
+                              <option value="Tostadora de Pan">
+                              <option value="Procesador de Alimentos">
+                              <option value="Olla Arrocera / Multicocina">
+                              <option value="Cocina de Inducción (1 Hornilla)">
+                              <option value="Cocina Eléctrica Vitrocerámica">
+                              <option value="Hervidor Eléctrico de Agua">
+
+                         <!-- Lavado y Agua -->
+                              <option value="Lavadora Automática (Carga Frontal/Superior)">
+                              <option value="Secadora de Ropa Eléctrica">
+                              <option value="Bomba de Agua (0.5 HP)">
+                              <option value="Bomba de Agua (1.0 HP)">
+                              <option value="Calentador de Agua Eléctrico (Termotanque)">
+                              <option value="Ducha Eléctrica">
+
+                         <!-- Entretenimiento y Electrónica -->
+                              <option value="Televisor LED / Smart TV 32&quot;-55&quot;">
+                              <option value="Televisor LED 65&quot;+">
+                              <option value="Decodificador / Router Wi-Fi / Módem">
+                              <option value="Consola de Videojuegos (PS5 / Xbox)">
+                              <option value="Equipo de Sonido / Home Theater">
+                              <option value="Computadora de Escritorio (PC Gaming / Trabajo)">
+                              <option value="Laptop / Portátil (Cargador)">
+
+                         <!-- Cuidado Personal y Varios -->
+                               <option value="Plancha de Ropa">
+                               <option value="Plancha / Secador de Pelo">
+                               <option value="Aspiradora / Robot Aspirador">
+                               <option value="Cargador de Teléfono Móvil / Tablet">
+                               <option value="Cargador de Vehículo Eléctrico / Scooter">
+                               <option value="Otros">
+                     </datalist>
+                 </div>
+                            <div class="form-group">
+                                <label for="eq_potencia">Potencia Nominal (Watts)</label>
+                                <input type="number" id="eq_potencia" placeholder="W" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="eq_cant">Cantidad</label>
+                                <input type="number" id="eq_cant" value="1" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="eq_horas">Horas de Uso Diario</label>
+                                <input type="number" id="eq_horas" value="4" min="0.1" max="24" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label for="eq_sim">F. Simultaneidad (0-1)</label>
+                                <input type="number" id="eq_sim" value="1.0" min="0.1" max="1.0" step="0.1">
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <button class="btn" onclick="insertarCarga()">+ Insertar en Fila de Cargas</button>
+                        </div>
+
+                        <!-- Layout de Análisis: Tabla y Gráfica -->
+                        <div class="dashboard-layout">
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Fila</th>
+                                            <th>Descripción</th>
+                                            <th>Potencia Total</th>
+                                            <th>Horas/Día</th>
+                                            <th>F.S.</th>
+                                            <th>Consumo Energía</th>
+                                            <th>Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla-cargas-body">
+                                        <!-- Las filas dinámicas se insertan aquí -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="chart-box">
+                                <canvas id="canvasConsumo" style="max-height: 280px; max-width: 280px;"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Indicadores Técnicos de Salida -->
+                        <div class="kpi-container">
+                            <div class="kpi-box">
+                                <p>Carga Instalada (Pico Máximo)</p>
+                                <h3 id="kpi-total-watts">0 W</h3>
+                            </div>
+                            <div class="kpi-box kpi-kwh">
+                                <p>Consumo Diario Acumulado</p>
+                                <h3 id="kpi-total-kwh">0.00 kWh/día</h3>
+                            </div>
+                            <div class="kpi-box">
+                                <p>Consumo Mensual Estimado</p>
+                                <h3 id="kpi-mensual-kwh">0.00 kWh/mes</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- MÓDULOS 3 y 4: INVERSOR Y BATERÍAS CON DURACIÓN -->
+                <div id="tab-inversor" class="tab-content">
+                    <div class="card">
+                        <h2>🔌 Módulos 3 y 4: Dimensionamiento de Inversor y Banco de Baterías</h2>
+                        
+                        <!-- ENTRADAS DE DATOS PROVENIENTES DE MÓDULOS ANTERIORES O AJUSTES -->
+                        <h3 style="font-size: 16px; margin-bottom: 15px; color:#666;">1. Datos de Carga Suministrados</h3>
+                        <div class="grid-3col">
+                            <div class="form-group">
+                                <label for="pico_carga">Potencia Pico Combinada (Carga Conectada)</label>
+                                <input type="number" id="pico_carga" value="2500" placeholder="Watts" onchange="actualizarDatosEnlazados()">
+                                <div class="info-badge" id="info-pico-carga"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="consumo_diario">Consumo Diario Requerido</label>
+                                <input type="number" id="consumo_diario" value="8.5" step="0.1" placeholder="kWh/día" onchange="actualizarDatosEnlazados()">
+                                <div class="info-badge" id="info-consumo-diario"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="voltaje_ac">Voltaje del Sistema AC</label>
+                                <select id="voltaje_ac">
+                                    <option value="120" selected>120 V</option>
+                                    <option value="230">230 V</option>
+                                    <option value="400">400 V</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- CONFIGURACIONES ESPECÍFICAS DE INVERSOR Y BATERÍAS -->
+                        <h3 style="font-size: 16px; margin-bottom: 15px; color:#666;">2. Parámetros Técnicos de los Componentes</h3>
+                        <div class="grid-3col">
+                            <div class="form-group">
+                                <label for="potencia_inversor_real">⚡ Potencia de MI Inversor (Watts)</label>
+                                <input type="number" id="potencia_inversor_real" value="3000" placeholder="Ingresa tu inversor real" onchange="actualizarDatosEnlazados()">
+                                <div class="info-badge" id="info-inversor"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="tecnologia_bat">Tecnología de Batería</label>
+                                <select id="tecnologia_bat" onchange="ajustarDoDDefecto()">
+                                    <option value="litio">Litio (LiFePO4)</option>
+                                    <option value="gel">GEL</option>
+                                    <option value="agm">AGM</option>
+                                    <option value="acido" selected>Plomo-Ácido Abierto</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="voltaje_dc">Voltaje del Banco DC VCC</label>
+                                <select id="voltaje_dc">
+                                    <option value="12">12 VDC</option>
+                                    <option value="24">24 VDC</option>
+                                    <option value="48" selected>48 VDC (Recomendado)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid-4col">
+                            <div class="form-group">
+                                <label for="cant_baterias">Cantidad de Baterías que Tengo</label>
+                                <input type="number" id="cant_baterias" value="1" min="1" placeholder="Número de baterías">
+                            </div>
+                            <div class="form-group">
+                                <label for="cap_bat_unitaria">Capacidad Unitaria (Ah)</label>
+                                <input type="number" id="cap_bat_unitaria" value="200" min="1" placeholder="Ej. 200 Ah">
+                            </div>
+                            <div class="form-group">
+                                <label for="volt_bat_unitaria">Voltaje Unitario (V)</label>
+                                <input type="number" id="volt_bat_unitaria" value="12" min="1" placeholder="Ej. 12 V">
+                            </div>
+                            <div class="form-group">
+                                <label for="dod_bat">Profundidad de Descarga Max (DoD)</label>
+                                <input type="number" id="dod_bat" value="0.80" step="0.05" min="0.1" max="0.95">
+                            </div>
+                        </div>
+
+                        <button class="btn" onclick="calcularInversorYBaterias()">⚡ Ejecutar Ingeniería de Acoplamiento</button>
+
+                        <!-- PANELES DE RESULTADOS DE INGENIERÍA -->
+                        <div class="results-grid-3">
+                            
+                            <!-- RESULTADO MÓDULO 3: INVERSOR -->
+                            <div class="res-box">
+                                <h4>🔌 Resultados de Validación del Inversor</h4>
+                                <p>Tu Inversor: <strong id="inv_potencia_real">0 W</strong></p>
+                                <p>Potencia Requerida: <strong id="inv_potencia_req">0 W</strong></p>
+                                <p>Margen de Seguridad: <strong id="inv_margen">0 W</strong></p>
+                                <div style="margin-top: 15px;">
+                                    <p><strong>Estado:</strong></p>
+                                    <p class="highlight" id="inv_estado">Esperando validación...</p>
+                                </div>
+                            </div>
+
+                            <!-- RESULTADO MÓDULO 4: BANCO BATERÍAS -->
+                            <div class="res-box baterias">
+                                <h4>🔋 Capacidad de tu Banco de Baterías</h4>
+                                <p>Capacidad Total: <strong id="bat_cap_total">0 Ah</strong></p>
+                                <p>Energía Total Almacenada: <strong id="bat_energia_total">0.00 kWh</strong></p>
+                                <p>Cantidad de Baterías: <strong id="bat_cantidad">1</strong></p>
+                                <p>Voltaje Total del Banco: <strong id="bat_voltaje_total">0 V</strong></p>
+                                <div style="margin-top: 15px;">
+                                    <p><strong>Configuración Real:</strong></p>
+                                    <p class="highlight-success" id="bat_config_real">Esperando cálculo...</p>
+                                </div>
+                            </div>
+
+                            <!-- NUEVO: AUTONOMÍA SIN SOL -->
+                            <div class="res-box autonomia">
+                                <h4>⏰ Autonomía sin Sol (Horas de Funcionamiento)</h4>
+                                <p>Energía Disponible en Batería: <strong id="aut_energia_disponible">0.00 kWh</strong></p>
+                                <p>Consumo Horario Promedio: <strong id="aut_consumo_horario">0.00 kWh/h</strong></p>
+                                <div style="margin-top: 15px; border-top: 2px solid #e91e63; padding-top: 12px;">
+                                    <p style="text-align: center;"><strong style="font-size: 16px; color: #e91e63;">DURACIÓN SIN SOL:</strong></p>
+                                    <p class="highlight-pink" style="text-align: center; font-size: 18px; margin-top: 10px;" id="aut_horas_totales">0 horas</p>
+                                </div>
+                                <div class="tabla-autonomia">
+                                    <h5>📊 Detalles de Autonomía</h5>
+                                    <p id="aut_detalles">Esperando cálculo...</p>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- DURACIÓN DE BATERÍAS -->
+                        <div class="results-grid">
+                            <div class="res-box duracion">
+                                <h4>⏱️ Duración Estimada de Baterías</h4>
+                                <p>Tipo de Batería: <strong id="dur_tipo_bat">-</strong></p>
+                                <p>Ciclos Útiles Anuales: <strong id="dur_ciclos">0</strong></p>
+                                <p>Vida Útil Aproximada: <strong id="dur_vida_anos">0 años</strong></p>
+                                <div style="margin-top: 15px;">
+                                    <p class="highlight-warning" id="dur_recomendacion">Esperando datos...</p>
+                                </div>
+                                <div class="durabilidad-tabla">
+                                    <h5>📊 Tabla de Degradación</h5>
+                                    <p id="dur_tabla_contenido">Esperando cálculo...</p>
+                                </div>
+                            </div>
+
+                            <!-- TABLA DE BATERÍAS DISPONIBLES -->
+                            <div class="res-box">
+                                <h4>📋 Especificaciones de tu Batería</h4>
+                                <div class="tabla-baterias">
+                                    <h5>Batería Actual:</h5>
+                                    <table>
+                                        <tr>
+                                            <td><strong>Cantidad:</strong></td>
+                                            <td><span id="spec_cantidad">1</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Voltaje Unitario:</strong></td>
+                                            <td><span id="spec_volt">12</span> V</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Capacidad:</strong></td>
+                                            <td><span id="spec_cap">200</span> Ah</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Tecnología:</strong></td>
+                                            <td><span id="spec_tech">Plomo-Ácido Abierto</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Ciclos Máximos:</strong></td>
+                                            <td><span id="spec_ciclos">500</span></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- MÓDULO 5 y 6 (NUEVO): PANELES DISPONIBLES Y ANÁLISIS DE CAPACIDAD -->
+                <div id="tab-paneles" class="tab-content">
+                    <div class="card">
+                        <h2>☀️ Módulo 5 y 6 (NUEVO): Análisis de Paneles Disponibles</h2>
+                        
+                        <!-- ENTRADA: CANTIDAD DE PANELES DISPONIBLES -->
+                        <h3 style="font-size: 16px; margin-bottom: 15px; color:#666;">1. Paneles Solares Disponibles</h3>
+                        <div class="grid-4col">
+                            <div class="form-group">
+                                <label for="cantidad_paneles">Cantidad de Paneles que Tengo</label>
+                                <input type="number" id="cantidad_paneles" value="8" min="1" placeholder="Número de paneles" onchange="actualizarDatosEnlazados()">
+                                <div class="info-badge" id="info-cantidad-paneles"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="potencia_panel">Potencia Nominal por Panel (W)</label>
+                                <input type="number" id="potencia_panel" value="450" placeholder="Watts" onchange="actualizarDatosEnlazados()">
+                                <div class="info-badge" id="info-potencia-panel"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="voltaje_panel">Voltaje Máximo de Panel (Voc)</label>
+                                <input type="number" id="voltaje_panel" value="49.3" step="0.1" placeholder="Voltios">
+                            </div>
+                            <div class="form-group">
+                                <label for="corriente_panel">Corriente Máxima de Panel (Isc)</label>
+                                <input type="number" id="corriente_panel" value="11.60" step="0.01" placeholder="Amperios">
+                            </div>
+                        </div>
+
+                        <h3 style="font-size: 16px; margin-bottom: 15px; color:#666;">2. Parámetros del Sistema</h3>
+                        <div class="grid-3col">
+                            <div class="form-group">
+                                <label for="hsp_paneles">Horas Solares Pico (HSP del Sitio)</label>
+                                <input type="number" id="hsp_paneles" value="5.2" step="0.1" placeholder="Ej. 5.2 (Cuba)">
+                            </div>
+                            <div class="form-group">
+                                <label for="rendimiento_paneles">Factor de Pérdidas Global (%)</label>
+                                <select id="rendimiento_paneles">
+                                    <option value="0.70">30% Pérdidas (Conservador)</option>
+                                    <option value="0.75" selected>25% Pérdidas (Estándar)</option>
+                                    <option value="0.80">20% Pérdidas (Óptimo)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="voltaje_banco_paneles">Voltaje del Banco DC</label>
+                                <select id="voltaje_banco_paneles">
+                                    <option value="12">12 VDC</option>
+                                    <option value="24">24 VDC</option>
+                                    <option value="48" selected>48 VDC</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button class="btn" onclick="analizarCapacidadPaneles()">📊 Analizar Capacidad del Sistema</button>
+
+                        <!-- PANEL DE ANÁLISIS DE CAPACIDAD -->
+                        <div class="results-grid">
+                            <div class="res-box analisis-paneles">
+                                <h4>📈 Capacidad Instalada de Paneles</h4>
+                                <p>Cantidad Total de Paneles: <strong id="pan_cantidad">0</strong></p>
+                                <p>Potencia Total Instalada: <strong id="pan_potencia_total">0 W</strong></p>
+                                <p>Energía Diaria Generada: <strong id="pan_energia_diaria">0.00 kWh</strong></p>
+                                <p>Energía Mensual Estimada: <strong id="pan_energia_mensual">0.00 kWh</strong></p>
+                                <div style="margin-top: 15px; border-top: 1px solid #ccc; padding-top: 10px;">
+                                    <p>Voltaje Máximo String: <strong id="pan_voltaje_max">0 V</strong></p>
+                                    <p>Corriente Máxima: <strong id="pan_corriente_max">0 A</strong></p>
+                                </div>
+                            </div>
+
+                            <!-- COMPARACIÓN DE CAPACIDAD -->
+                            <div class="res-box">
+                                <h4>⚖️ Análisis de Viabilidad Completo</h4>
+                                <div class="analisis-capacidad">
+                                    <h5>✓ Comparativo Integrado del Sistema</h5>
+                                    <div class="capacidad-item">
+                                        <div class="capacidad-label">Consumo Diario Requerido:</div>
+                                        <div class="capacidad-valor" id="comp_consumo_req">-</div>
+                                    </div>
+                                    <div class="capacidad-item">
+                                        <div class="capacidad-label">Generación Diaria Disponible:</div>
+                                        <div class="capacidad-valor" id="comp_generacion_diaria">-</div>
+                                    </div>
+                                    <div class="capacidad-item">
+                                        <div class="capacidad-label">Balance Energético:</div>
+                                        <div class="capacidad-valor" id="comp_diferencia">-</div>
+                                    </div>
+                                    <div class="capacidad-item">
+                                        <div class="capacidad-label">Potencia Pico Requerida:</div>
+                                        <div class="capacidad-valor" id="comp_potencia_req">-</div>
+                                    </div>
+                                    <div class="capacidad-item">
+                                        <div class="capacidad-label">Potencia Instalada en Paneles:</div>
+                                        <div class="capacidad-valor" id="comp_potencia_disp">-</div>
+                                    </div>
+                                    <div class="capacidad-item">
+                                        <div class="capacidad-label">Tu Inversor (Capacidad):</div>
+                                        <div class="capacidad-valor" id="comp_potencia_inv">-</div>
+                                    </div>
+                                    <div class="capacidad-item">
+                                        <div class="capacidad-label">¿El Inversor es Suficiente?:</div>
+                                        <div class="capacidad-valor" id="comp_inv_estado">-</div>
+                                    </div>
+                                    <div class="capacidad-item" style="margin-top: 15px; border-top: 2px solid var(--accent); padding-top: 15px;">
+                                        <div class="capacidad-label"><strong>VEREDICTO FINAL:</strong></div>
+                                        <div class="capacidad-valor" id="veredicto_final">Esperando análisis...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- MÓDULOS 7, 8 y 9: PROTECCIONES, CABLES Y ESTRUCTURA -->
+                <div id="tab-ingenieria" class="tab-content">
+                    <div class="card">
+                        <h2>🛡️ Módulos 7, 8 y 9: Protecciones, Conductores y Estructura</h2>
+                        
+                        <!-- PARÁMETROS DEL SISTEMA CALCULADOS ANTERIORMENTE -->
+                        <h3 style="font-size: 16px; margin-bottom: 15px; color:#666;">1. Parámetros Eléctricos Críticos del Sistema</h3>
+                        <div class="grid-3col">
+                            <div class="form-group">
+                                <label for="sys_isc">Corriente Cortocircuito del Arreglo ($I_{sc}$ total)</label>
+                                <input type="number" id="sys_isc" value="11.60" step="0.01" placeholder="Amperios">
+                            </div>
+                            <div class="form-group">
+                                <label for="sys_v_banco">Voltaje Nominal del Banco DC</label>
+                                <select id="sys_v_banco">
+                                    <option value="12">12 VDC</option>
+                                    <option value="24">24 VDC</option>
+                                    <option value="48" selected>48 VDC</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="sys_potencia_inv">Potencia Nominal del Inversor</label>
+                                <input type="number" id="sys_potencia_inv" value="3000" placeholder="Watts">
+                            </div>
+                        </div>
+
+                        <!-- DATOS FÍSICOS DE INSTALACIÓN (DISTANCIAS Y UBICACIÓN) -->
+                        <h3 style="font-size: 16px; margin-bottom: 15px; color:#666;">2. Datos de Emplazamiento y Distancias</h3>
+                        <div class="grid-3col">
+                            <div class="form-group">
+                                <label for="dist_paneles_mppt">Distancia Paneles a MPPT (Metros)</label>
+                                <input type="number" id="dist_paneles_mppt" value="15" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="latitud_sitio">Latitud del Sitio (Grados)</label>
+                                <input type="number" id="latitud_sitio" value="23.1" step="0.1" placeholder="Ej. 23.1 (La Habana)">
+                            </div>
+                            <div class="form-group">
+                                <label for="tipo_superficie">Tipo de Superficie / Techo</label>
+                                <select id="tipo_superficie">
+                                    <option value="plano_concreto" selected>Cubierta Plana (Concreto)</option>
+                                    <option value="teja_metalica">Techo Inclinado (Zinc / Teja Metálica)</option>
+                                    <option value="suelo">Estructura a Tierra (Suelo/Jardín)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button class="btn" onclick="ejecutarIngenieriaFinal()">🛡️ Calcular Protecciones, Cables y Soportes</button>
+
+                        <!-- BLOQUE TRIPLE DE RESULTADOS -->
+                        <div class="results-grid-3">
+                            
+                            <!-- MÓDULO 7: PROTECCIONES -->
+                            <div class="res-box">
+                                <h4>🛡️ Módulo 7: Protecciones</h4>
+                                <p>Breaker DC (Strings): <strong id="prot_breaker_fv">0 A</strong></p>
+                                <p>Fusible DC (Baterías): <strong id="prot_fusible_bat">0 A</strong></p>
+                                <p>Breaker AC (Salida): <strong id="prot_breaker_ac">0 A</strong></p>
+                                <p>Protección Adicional: <strong>DPS (Supresor Transitorios)</strong></p>
+                                <span class="badge bg-danger">Seguridad NEC Estándar</span>
+                            </div>
+
+                            <!-- MÓDULO 8: CONDUCTORES Y CALIBRES -->
+                            <div class="res-box cables">
+                                <h4>🔌 Módulo 8: Calibres de Cable</h4>
+                                <p>Tramo Paneles ➔ MPPT:</p>
+                                <p>• Sección Mínima: <strong id="cable_fv_mm">0.00 mm²</strong></p>
+                                <p>• Calibre Comercial: <strong id="cable_fv_awg">-</strong></p>
+                                <p>Tramo Baterías ➔ Inversor:</p>
+                                <p>• Sección Mínima: <strong id="cable_bat_mm">0.00 mm²</strong></p>
+                                <p>• Calibre Comercial: <strong id="cable_bat_awg">-</strong></p>
+                                <span class="badge bg-info">Caída de Tensión &lt; 3%</span>
+                            </div>
+
+                            <!-- MÓDULO 9: ESTRUCTURA DE SOPORTE -->
+                            <div class="res-box estructura">
+                                <h4>📐 Módulo 9: Soporte Físico</h4>
+                                <p>Ángulo de Inclinación Fijo: <strong id="est_angulo">0°</strong></p>
+                                <p>Orientación Óptima: <strong id="est_orientacion">Sur Geográfico</strong></p>
+                                <p>Tipo de Anclaje Recomendado:</p>
+                                <p id="est_anclaje" style="font-weight: 600; color: #555;">Esperando datos...</p>
+                                <span class="badge bg-gray">Resistencia Viento 150 km/h</span>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- MÓDULOS 10-13: CIERRE DE PROYECTO Y REPORTE -->
+                <div id="tab-resultados" class="tab-content">
+                    <div class="card">
+                        <h2>📊 Módulos 10-13: Viabilidad Económica, Sombras y Reporte Técnico</h2>
+                        
+                        <!-- MÓDULO 10 & 11: ENTRADAS FINANCIERAS Y SOMBRAS -->
+                        <h3 style="font-size: 16px; margin-bottom: 15px; color:#666;">1. Parámetros Económicos y Entorno de Sombras</h3>
+                        <div class="grid-2col">
+                            <div class="form-group">
+                                <label for="fin_costo_total">Costo Total del Proyecto Solar (USD / CUP)</label>
+                                <input type="number" id="fin_costo_total" value="4500" placeholder="Mano de obra + Equipos">
+                            </div>
+                            <div class="form-group">
+                                <label for="fin_ahorro_mensual">Ahorro Mensual Estimado en la Factura</label>
+                                <input type="number" id="fin_ahorro_mensual" value="125" placeholder="Monto equivalente ahorrado">
+                            </div>
+                        </div>
+
+                        <div class="grid-2col">
+                            <div class="form-group">
+                                <label for="sombra_factor">Impacto de Sombras Cercanas (Obstáculos)</label>
+                                <select id="sombra_factor">
+                                    <option value="0" selected>Sin Sombras (Área 100% Despejada)</option>
+                                    <option value="5">Sombras Leves (-5% Eficiencia Anual)</option>
+                                    <option value="15">Sombras Moderadas (-15% Eficiencia - Árboles/Edificios)</option>
+                                    <option value="30">Sombras Severas (-30% Eficiencia - Rediseño Recomendado)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="rep_cliente">Nombre del Cliente / Proyecto</label>
+                                <input type="text" id="rep_cliente" value="Residencia Familia Pérez">
+                            </div>
+                        </div>
+
+                        <!-- MÓDULO 12: PLAN DE MANTENIMIENTO -->
+                        <h3 style="font-size: 16px; margin-bottom: 15px; color:#666;">2. Estrategia Operativa (Mantenimiento)</h3>
+                        <div class="grid-2col">
+                            <div class="form-group">
+                                <label for="maint_frecuencia">Frecuencia de Limpieza de Paneles</label>
+                                <select id="maint_frecuencia">
+                                    <option value="Mensual">Cada 30 días (Zonas con alto polvo/hollín)</option>
+                                    <option value="Trimestral" selected>Cada 3 meses (Estándar recomendado)</option>
+                                    <option value="Semestral">Cada 6 meses (Zonas de alta lluvia)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="maint_observaciones">Notas Técnicas Especiales de Inspección</label>
+                                <textarea id="maint_observaciones">Verificar torque de terminales en caja de combinación DC y reapriete de grapas estructurales (Mid-Clamps) ante vientos estacionales.</textarea>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-success" onclick="generarReporteFinal()">📋 Compilar y Consolidar Reporte Técnico</button>
+
+                        <!-- MÓDULO 13: CONTENEDOR DEL REPORTE TÉCNICO FORMAL INTERNO -->
+                        <div class="reporte-container" id="reporteSeccionFisica">
+                            <div class="reporte-header">
+                                <h3>MEMORIA TÉCNICA Y DIAGNÓSTICO FINAL</h3>
+                                <p style="color: #666; font-size: 20px; margin-top: 5px;">SolarCalc Pro - Sistema de Ingeniería Fotovoltaica Certificado</p>
+                            </div>
+
+                            <div class="reporte-grid">
+                                <div class="reporte-seccion">
+                                    <h4>👤 Información del Proyecto</h4>
+                                    <p><strong>Cliente:</strong> <span id="r_cliente">-</span></p>
+                                    <p><strong>Fecha de Emisión:</strong> <span id="r_fecha">-</span></p>
+                                    <p><strong>Estado del Sitio:</strong> Evaluado con éxito</p>
+                                </div>
+                                
+                                <div class="reporte-seccion">
+                                    <h4>💰 Viabilidad Económica y ROI </h4>
+                                    <p><strong>Inversión Inicial:</strong> <span id="r_costo">-</span></p>
+                                    <p><strong>Ahorro Anual Proyectado:</strong> <span id="r_ahorro_anual">-</span></p>
+                                    <p><strong>Retorno de Inversión (Amortización):</strong> <span id="r_roi" style="color: var(--success); font-weight: bold;">-</span></p>
+                                </div>
+                            </div>
+
+                        <!-- BLOQUE INFORMATIVO: CONTEXTO HSP LA HABANA (IMPRIMIBLE) -->
+                         <div style="font-size: 18px; color: #555;">
+                                  <h4>☀️ Contexto de Radiación Solar y HSP (La Habana) </h4>
+                                  <p style="font-size: 18px; line-height: 1.4; margin-bottom: 8px;">
+                                     En La Habana, el valor más alto de Horas Solares Pico (HSP) se alcanza durante la primavera/inicio de verano (principalmente en abril y mayo), registrando valores pico promedio de alrededor de <strong>6.0 a 6.5 HSP/día</strong> (equivalentes a 6.0–6.5 kWh/m²/día) en un plano adecuadamente inclinado.
+                                     
+                                <div style="font-size: 18px; color: #555;">
+                                  <strong>¿Por qué se reduce el ángulo en verano?:</strong>
+                                  <ul style="margin: 4px 0 0 18px; padding: 0;">
+                                  <li><strong>La posición del Sol: </strong> Durante el verano el Sol pasa casi directamente por encima de nuestras cabezas (en un punto muy alto en el cielo). Al poner los paneles con un ángulo más bajo o plano (10°–15°), los rayos caen de forma perpendicular a la superficie del panel, captando el $100% de la radiación directa.</li>
+                                  <li><strong>Comparación con el invierno:</strong> En invierno, el Sol baja en el horizonte. Para captar bien los rayos de invierno, los paneles necesitarían inclinarse más (alrededor de 30°–35°).</li>
+                                </ul>
+                            </div>
+                        </div>
+                            <div class="reporte-seccion">
+                                <h4>🌲 Análisis de Entorno y Sombras </h4>
+                                <p><strong>Penalización por Sombras:</strong> <span id="r_sombra_porc">-</span></p>
+                                <p><strong>Acción de Mitigación:</strong> Ajustar la distancia entre filas de strings y podar vegetación colindante si aplica.</p>
+                            </div>
+
+                            <div class="reporte-seccion">
+                                <h4>🔧 Protocolo O&M - Mantenimiento Preventivo </h4>
+                                <p><strong>Limpieza de Vidrio Solar:</strong> Planificado con frecuencia <strong id="r_maint_freq">-</strong> utilizando agua desmineralizada sin aditivos químicos.</p>
+                                <p><strong>Inspección Eléctrica:</strong> Revisión semestral del estado de degradación de los varistores en el DPS y estado de sulfatación en bornes de baterías.</p>
+                                <p><strong>Observaciones:</strong> <span id="r_maint_obs">-</span></p>
+                            </div>
+
+                            <div style="text-align: center; margin-top: 20px;">
+                                <button class="btn" style="background-color: var(--info); width: auto;" onclick="window.print()">🖨️ Imprimir / Guardar en PDF</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // ============================================================
+        // OBJETO GLOBAL DEL PROYECTO
+        // ============================================================
+        const ProyectoSolar = {
+            datos: {
+                cliente: "",
+                direccion: "",
+                tipo_inst: "aislada",
+                sistema: "monofasico",
+                voltaje: 120,
+                frecuencia: 60
+            },
+            consumos: [],
+            dimensionamiento: {},
+            paneles: {}
+        };
+
+        // ============================================================
+        // PARÁMETROS DE DURABILIDAD DE BATERÍAS
+        // ============================================================
+        const parametrosDurabilidad = {
+            litio: {
+                ciclos: 3000,
+                vida_nominal: 10,
+                degradacion_anual: 2,
+                descripcion: "Litio (LiFePO4) - Tecnología moderna con excelente durabilidad"
+            },
+            gel: {
+                ciclos: 1200,
+                vida_nominal: 5,
+                degradacion_anual: 5,
+                descripcion: "Batería GEL - Ciclos moderados, mantenimiento mínimo"
+            },
+            agm: {
+                ciclos: 1000,
+                vida_nominal: 4,
+                degradacion_anual: 6,
+                descripcion: "Batería AGM - Ciclos limitados, requiere mantenimiento"
+            },
+            acido: {
+                ciclos: 500,
+                vida_nominal: 2.5,
+                degradacion_anual: 8,
+                descripcion: "Plomo-Ácido Abierto - Ciclos mínimos, mantenimiento frecuente"
+            }
+        };
+
+        // ============================================================
+        // MÓDULO 1: CONTROL DE PESTAÑAS SPA
+        // ============================================================
+        function switchTab(tabId, event) {
+            guardarDatosModulo1();
+
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            document.querySelectorAll('.menu-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
+            
+            const titulos = {
+                datos: "Datos del Proyecto",
+                consumos: "Cálculo de Consumos",
+                inversor: "Dimensionamiento de Inversor y Baterías",
+                paneles: "Análisis de Paneles Disponibles",
+                ingenieria: "Ingeniería de Conductores y Protecciones",
+                resultados: "Resultados Generales y Exportación"
+            };
+            document.getElementById('tab-title').innerText = titulos[tabId] || "SolarCalc Pro";
+        }
+
+        function actualizarVoltajes() {
+            const sistema = document.getElementById('sistema').value;
+            const voltSelect = document.getElementById('voltaje');
+            const valorPrevio = voltSelect.value;
+            
+            voltSelect.innerHTML = '';
+            
+            const opciones = sistema === 'monofasico' 
+                ? [12, 24, 48, 120, 230] 
+                : [230, 400];
+                
+            opciones.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.innerText = `${v} V`;
+                voltSelect.appendChild(opt);
+            });
+
+            if (opciones.includes(parseInt(valorPrevio))) {
+                voltSelect.value = valorPrevio;
+            }
+        }
+
+        function guardarDatosModulo1() {
+            ProyectoSolar.datos.cliente = document.getElementById('cliente').value;
+            ProyectoSolar.datos.direccion = document.getElementById('direccion').value;
+            ProyectoSolar.datos.tipo_inst = document.getElementById('tipo_inst').value;
+            ProyectoSolar.datos.sistema = document.getElementById('sistema').value;
+            ProyectoSolar.datos.voltaje = parseInt(document.getElementById('voltaje').value);
+            ProyectoSolar.datos.frecuencia = parseInt(document.getElementById('frecuencia').value);
+        }
+
+        // ============================================================
+        // MÓDULO 2: ANÁLISIS Y CÁLCULO DINÁMICO DE CONSUMOS
+        // ============================================================
+        let listaCargas = [];
+        let graficoDonut = null;
+
+        function insertarCarga() {
+            const txtNombre = document.getElementById('eq_nombre').value.trim();
+            const valPotencia = parseFloat(document.getElementById('eq_potencia').value);
+            const valCantidad = parseInt(document.getElementById('eq_cant').value);
+            const valHoras = parseFloat(document.getElementById('eq_horas').value);
+            const valSimultaneidad = parseFloat(document.getElementById('eq_sim').value);
+
+            if (!txtNombre) { alert("Escriba la descripción del equipo eléctrico."); return; }
+            if (isNaN(valPotencia) || valPotencia <= 0) { alert("La potencia debe ser un número mayor a 0 W."); return; }
+            if (isNaN(valCantidad) || valCantidad <= 0) { alert("La cantidad de equipos mínimos debe ser 1."); return; }
+            if (isNaN(valHoras) || valHoras < 0 || valHoras > 24) { alert("Las horas operativas diarias deben estar entre 0 y 24."); return; }
+            if (isNaN(valSimultaneidad) || valSimultaneidad < 0.1 || valSimultaneidad > 1.0) { alert("El Factor de Simultaneidad debe oscilar entre 0.1 y 1.0."); return; }
+
+            const potenciaCalculada = valPotencia * valCantidad;
+            const energiaDiariaCalculada = (potenciaCalculada * valHoras * valSimultaneidad) / 1000;
+
+            listaCargas.push({
+                nombre: txtNombre,
+                potencia: valPotencia,
+                cantidad: valCantidad,
+                horas: valHoras,
+                simultaneidad: valSimultaneidad,
+                totalW: potenciaCalculada,
+                kwh: energiaDiariaCalculada
+            });
+
+            document.getElementById('eq_nombre').value = '';
+            document.getElementById('eq_potencia').value = '';
+            document.getElementById('eq_cant').value = '1';
+            document.getElementById('eq_horas').value = '4';
+            document.getElementById('eq_sim').value = '1.0';
+
+            recalcularYRenderizar();
+        }
+
+        function removerFilaCarga(index) {
+            listaCargas.splice(index, 1);
+            recalcularYRenderizar();
+        }
+
+        function recalcularYRenderizar() {
+            const tbody = document.getElementById('tabla-cargas-body');
+            tbody.innerHTML = '';
+            
+            let sumaWatts = 0;
+            let sumaKwh = 0;
+
+            listaCargas.forEach((item, index) => {
+                sumaWatts += item.totalW;
+                sumaKwh += item.kwh;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>#${index + 1}</strong></td>
+                        <td>${item.nombre} <small style="color:#777;">(${item.cantidad}x ${item.potencia}W)</small></td>
+                        <td>${item.totalW} W</td>
+                        <td>${item.horas} h</td>
+                        <td>${item.simultaneidad.toFixed(1)}</td>
+                        <td><strong>${item.kwh.toFixed(2)} kWh/día</strong></td>
+                        <td><button class="btn btn-danger" onclick="removerFilaCarga(${index})">🗑️ Borrar</button></td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('kpi-total-watts').innerText = `${sumaWatts} W`;
+            document.getElementById('kpi-total-kwh').innerText = `${sumaKwh.toFixed(2)} kWh/día`;
+            document.getElementById('kpi-mensual-kwh').innerText = `${(sumaKwh * 30).toFixed(2)} kWh/mes`;
+
+            document.getElementById('pico_carga').value = sumaWatts;
+            document.getElementById('consumo_diario').value = sumaKwh.toFixed(2);
+            actualizarDatosEnlazados();
+
+            renderizarGraficaConsumos();
+        }
+
+        function renderizarGraficaConsumos() {
+            const ctx = document.getElementById('canvasConsumo').getContext('2d');
+            
+            const etiquetas = listaCargas.map(c => c.nombre);
+            const datosEnergia = listaCargas.map(c => c.kwh);
+
+            if (graficoDonut) {
+                graficoDonut.destroy();
+            }
+
+            if(listaCargas.length === 0) return;
+
+            graficoDonut = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: etiquetas,
+                    datasets: [{
+                        data: datosEnergia,
+                        backgroundColor: [
+                            '#f39c12', '#2ecc71', '#3498db', '#9b59b6', '#e74c3c', 
+                            '#1abc9c', '#34495e', '#d35400', '#27ae60', '#2980b9'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        // FUNCIÓN: ACTUALIZAR DATOS ENLAZADOS
+        // ============================================================
+        function actualizarDatosEnlazados() {
+            const pico = parseFloat(document.getElementById('pico_carga').value) || 0;
+            const consumo = parseFloat(document.getElementById('consumo_diario').value) || 0;
+            const inversor = parseFloat(document.getElementById('potencia_inversor_real').value) || 0;
+            const cantPaneles = parseInt(document.getElementById('cantidad_paneles').value) || 0;
+            const potPanel = parseFloat(document.getElementById('potencia_panel').value) || 0;
+
+            if (pico > 0) {
+                document.getElementById('info-pico-carga').innerHTML = `📌 Potencia máxima del sistema`;
+            }
+
+            if (consumo > 0) {
+                document.getElementById('info-consumo-diario').innerHTML = `⚡ Transferible a Paneles`;
+            }
+
+            if (inversor > 0) {
+                const margen = inversor - (pico * 1.25);
+                if (margen >= 0) {
+                    document.getElementById('info-inversor').innerHTML = `✓ ${inversor}W disponibles`;
+                } else {
+                    document.getElementById('info-inversor').innerHTML = `⚠ Insuficiente`;
+                }
+            }
+
+            if (cantPaneles > 0) {
+                const potTotal = cantPaneles * potPanel;
+                document.getElementById('info-cantidad-paneles').innerHTML = `☀️ ${potTotal}W totales`;
+            }
+
+            if (potPanel > 0) {
+                document.getElementById('info-potencia-panel').innerHTML = `💡 ${potPanel}W por panel`;
+            }
+        }
+
+        // ============================================================
+        // MÓDULOS 3 y 4: INVERSOR Y BATERÍAS CON DURACIÓN Y AUTONOMÍA
+        // ============================================================
+        function ajustarDoDDefecto() {
+            const tec = document.getElementById('tecnologia_bat').value;
+            const inputDoD = document.getElementById('dod_bat');
+            
+            if (tec === 'litio') inputDoD.value = "0.80";
+            else if (tec === 'gel') inputDoD.value = "0.50";
+            else if (tec === 'agm') inputDoD.value = "0.45";
+            else if (tec === 'acido') inputDoD.value = "0.40";
+        }
+
+        function calcularDuracionBaterias(tecnologia, capacidadAh, consumoDiarioKwh, voltajeDc) {
+            const params = parametrosDurabilidad[tecnologia];
+            
+            const capacidadKwh = (capacidadAh * voltajeDc) / 1000;
+            const ciclosAnuales = (consumoDiarioKwh * 365) / capacidadKwh;
+            const vidaUtil = Math.max(params.ciclos / ciclosAnuales, 1);
+            
+            let tablaContenido = `
+                <strong>Ciclos anuales esperados:</strong> ${Math.round(ciclosAnuales)} ciclos/año<br>
+                <strong>Capacidad disponible inicial:</strong> ${Math.round(capacidadAh)} Ah<br>
+            `;
+            
+            let capacidadActual = capacidadAh;
+            for (let año = 1; año <= Math.min(5, Math.ceil(vidaUtil)); año++) {
+                capacidadActual = capacidadActual * (1 - (params.degradacion_anual / 100));
+                let porcentajeDegradacion = ((1 - (capacidadActual / capacidadAh)) * 100).toFixed(1);
+                tablaContenido += `<br>Año ${año}: ${porcentajeDegradacion}% degradación (${Math.round(capacidadActual)} Ah restantes)`;
+            }
+
+            return {
+                vidaUtil: vidaUtil,
+                ciclosAnuales: ciclosAnuales,
+                tablaContenido: tablaContenido,
+                recomendacion: params.descripcion
+            };
+        }
+
+        function calcularAutonomia(capacidadAhTotal, voltajeDc, consumoDiarioKwh, dod) {
+            const energiaDisponible = (capacidadAhTotal * dod * voltajeDc) / 1000;
+            const consumoHorario = consumoDiarioKwh / 24;
+            const horasFuncionamiento = energiaDisponible / consumoHorario;
+            
+            const horas = Math.floor(horasFuncionamiento);
+            const minutos = Math.round((horasFuncionamiento - horas) * 60);
+            const dias = Math.floor(horasFuncionamiento / 24);
+            const horasRestantes = Math.round(horasFuncionamiento % 24);
+
+            return {
+                energiaDisponible: energiaDisponible,
+                consumoHorario: consumoHorario,
+                horasTotales: horasFuncionamiento,
+                horas: horas,
+                minutos: minutos,
+                dias: dias,
+                horasRestantes: horasRestantes
+            };
+        }
+
+        function calcularInversorYBaterias() {
+            const pCarga = parseFloat(document.getElementById('pico_carga').value) || 0;
+            const eDia = parseFloat(document.getElementById('consumo_diario').value) || 0;
+            const vAc = parseFloat(document.getElementById('voltaje_ac').value);
+            
+            const potenciaInversorReal = parseFloat(document.getElementById('potencia_inversor_real').value) || 0;
+            const tecBat = document.getElementById('tecnologia_bat').value;
+            const cantBaterias = parseInt(document.getElementById('cant_baterias').value) || 1;
+            const capBatUnitaria = parseFloat(document.getElementById('cap_bat_unitaria').value) || 200;
+            const voltBatUnitaria = parseInt(document.getElementById('volt_bat_unitaria').value) || 12;
+            const dod = parseFloat(document.getElementById('dod_bat').value) || 0.5;
+
+            if(pCarga <= 0 || eDia <= 0 || potenciaInversorReal <= 0) {
+                alert("Por favor ingrese valores de potencia, consumo e inversor válidos mayores a cero.");
+                return;
+            }
+
+            // --- VALIDACIÓN DEL INVERSOR ---
+            const potenciaRequerida = pCarga * 1.25;
+            const margenSeguridad = potenciaInversorReal - potenciaRequerida;
+            let estadoInversor = "";
+            let colorInversor = "";
+
+            if (potenciaInversorReal >= potenciaRequerida) {
+                estadoInversor = `✓ TU INVERSOR ES SUFICIENTE (Margen: ${margenSeguridad.toFixed(0)} W)`;
+                colorInversor = "ok";
+            } else {
+                estadoInversor = `✗ TU INVERSOR ES INSUFICIENTE (Faltan: ${Math.abs(margenSeguridad).toFixed(0)} W)`;
+                colorInversor = "error";
+            }
+
+            document.getElementById('inv_potencia_real').innerText = `${potenciaInversorReal.toFixed(0)} W`;
+            document.getElementById('inv_potencia_req').innerText = `${potenciaRequerida.toFixed(0)} W`;
+            document.getElementById('inv_margen').innerText = `${margenSeguridad.toFixed(0)} W`;
+            document.getElementById('inv_estado').innerHTML = `<strong style="color: ${colorInversor === 'ok' ? 'var(--success)' : 'var(--danger)'};">${estadoInversor}</strong>`;
+
+            // --- RESULTADOS DEL BANCO DE BATERÍAS REAL ---
+            const capacidadTotalReal = capBatUnitaria * cantBaterias;
+            const voltajeTotalReal = voltBatUnitaria * cantBaterias;
+            const energiaKwhTotal = (capacidadTotalReal * voltajeTotalReal) / 1000;
+
+            document.getElementById('bat_cap_total').innerText = `${Math.ceil(capacidadTotalReal)} Ah`;
+            document.getElementById('bat_energia_total').innerText = `${energiaKwhTotal.toFixed(2)} kWh`;
+            document.getElementById('bat_cantidad').innerText = `${cantBaterias}`;
+            document.getElementById('bat_voltaje_total').innerText = `${voltajeTotalReal} V`;
+            document.getElementById('bat_config_real').innerText = `${cantBaterias} batería(s) de ${capBatUnitaria}Ah × ${voltBatUnitaria}V = ${voltajeTotalReal}V / ${capacidadTotalReal}Ah`;
+
+            // --- CÁLCULO DE AUTONOMÍA SIN SOL ---
+            const autonomia = calcularAutonomia(capacidadTotalReal, voltajeTotalReal, eDia, dod);
+
+            document.getElementById('aut_energia_disponible').innerText = `${autonomia.energiaDisponible.toFixed(2)} kWh`;
+            document.getElementById('aut_consumo_horario').innerText = `${autonomia.consumoHorario.toFixed(3)} kWh/h`;
+            
+            let duracionTexto = "";
+            if (autonomia.dias > 0) {
+                duracionTexto = `${autonomia.dias} día${autonomia.dias > 1 ? 's' : ''} y ${autonomia.horasRestantes} hora${autonomia.horasRestantes > 1 ? 's' : ''}`;
+            } else {
+                duracionTexto = `${autonomia.horas} hora${autonomia.horas > 1 ? 's' : ''} y ${autonomia.minutos} minuto${autonomia.minutos > 1 ? 's' : ''}`;
+            }
+
+            document.getElementById('aut_horas_totales').innerText = duracionTexto;
+
+            let detallesAutonomia = `
+                <strong>Capacidad usable:</strong> ${autonomia.energiaDisponible.toFixed(2)} kWh (${(dod * 100).toFixed(0)}% DoD)<br>
+                <strong>Consumo promedio:</strong> ${autonomia.consumoHorario.toFixed(3)} kWh/hora<br>
+                <strong>Duración total:</strong> <span style="color: #e91e63; font-weight: bold; font-size: 14px;">${duracionTexto}</span><br>
+                <strong>Total de horas:</strong> ${autonomia.horasTotales.toFixed(1)} horas
+            `;
+            document.getElementById('aut_detalles').innerHTML = detallesAutonomia;
+
+            // --- DURACIÓN DE BATERÍAS ---
+            const durabilidad = calcularDuracionBaterias(tecBat, capacidadTotalReal, eDia, voltajeTotalReal);
+            
+            document.getElementById('dur_tipo_bat').innerText = tecBat.toUpperCase();
+            document.getElementById('dur_ciclos').innerText = `${Math.round(durabilidad.ciclosAnuales)} ciclos/año`;
+            document.getElementById('dur_vida_anos').innerText = `${durabilidad.vidaUtil.toFixed(1)} años`;
+            document.getElementById('dur_recomendacion').innerText = durabilidad.recomendacion;
+            document.getElementById('dur_tabla_contenido').innerHTML = durabilidad.tablaContenido;
+
+            // --- ESPECIFICACIONES DE TU BATERÍA ---
+            const tecNames = {
+                'litio': 'Litio (LiFePO4)',
+                'gel': 'Batería GEL',
+                'agm': 'Batería AGM',
+                'acido': 'Plomo-Ácido Abierto'
+            };
+
+            const ciclosMap = {
+                'litio': 3000,
+                'gel': 1200,
+                'agm': 1000,
+                'acido': 500
+            };
+
+            document.getElementById('spec_cantidad').innerText = cantBaterias;
+            document.getElementById('spec_volt').innerText = voltBatUnitaria;
+            document.getElementById('spec_cap').innerText = capBatUnitaria;
+            document.getElementById('spec_tech').innerText = tecNames[tecBat];
+            document.getElementById('spec_ciclos').innerText = ciclosMap[tecBat];
+
+            ProyectoSolar.dimensionamiento = {
+                potenciaInversor: potenciaInversorReal,
+                capacidadBateria: capacidadTotalReal,
+                energiaBateria: energiaKwhTotal,
+                voltageBateria: voltajeTotalReal,
+                inversorsuficiente: potenciaInversorReal >= potenciaRequerida,
+                autonomiaHoras: autonomia.horasTotales
+            };
+        }
+
+        // ============================================================
+        // MÓDULO 5 y 6: ANÁLISIS DE PANELES
+        // ============================================================
+        function analizarCapacidadPaneles() {
+            const cantidadPaneles = parseInt(document.getElementById('cantidad_paneles').value) || 0;
+            const potenciaPanel = parseFloat(document.getElementById('potencia_panel').value) || 0;
+            const voltajePanel = parseFloat(document.getElementById('voltaje_panel').value) || 0;
+            const corrientePanel = parseFloat(document.getElementById('corriente_panel').value) || 0;
+            const hsp = parseFloat(document.getElementById('hsp_paneles').value) || 0;
+            const rendimiento = parseFloat(document.getElementById('rendimiento_paneles').value) || 0.75;
+            const vBancoPaneles = parseInt(document.getElementById('voltaje_banco_paneles').value);
+
+            if (cantidadPaneles <= 0 || potenciaPanel <= 0) {
+                alert("Ingrese valores válidos para cantidad y potencia de paneles.");
+                return;
+            }
+
+            const potenciaTotalInstalada = cantidadPaneles * potenciaPanel;
+            const energiaDiariaGenerada = (potenciaTotalInstalada * hsp * rendimiento) / 1000;
+            const energiaMensualGenerada = energiaDiariaGenerada * 30;
+
+            const voltajeMaxString = voltajePanel * 1.15;
+            const corrienteMaxString = corrientePanel;
+
+            ProyectoSolar.paneles = {
+                cantidad: cantidadPaneles,
+                potenciaUnitaria: potenciaPanel,
+                potenciaTotal: potenciaTotalInstalada,
+                energiaDiaria: energiaDiariaGenerada,
+                energiaMensual: energiaMensualGenerada,
+                voltajeMax: voltajeMaxString,
+                corrienteMax: corrienteMaxString
+            };
+
+            document.getElementById('pan_cantidad').innerText = `${cantidadPaneles}`;
+            document.getElementById('pan_potencia_total').innerText = `${potenciaTotalInstalada.toFixed(0)} W`;
+            document.getElementById('pan_energia_diaria').innerText = `${energiaDiariaGenerada.toFixed(2)} kWh`;
+            document.getElementById('pan_energia_mensual').innerText = `${energiaMensualGenerada.toFixed(2)} kWh`;
+            document.getElementById('pan_voltaje_max').innerText = `${voltajeMaxString.toFixed(1)} V`;
+            document.getElementById('pan_corriente_max').innerText = `${corrienteMaxString.toFixed(2)} A`;
+
+            const consumoDiario = parseFloat(document.getElementById('consumo_diario').value) || 0;
+            const potenciaPico = parseFloat(document.getElementById('pico_carga').value) || 0;
+            const potenciaInversor = parseFloat(document.getElementById('potencia_inversor_real').value) || 0;
+
+            const diferencia = energiaDiariaGenerada - consumoDiario;
+            const diferenciaPorcentaje = consumoDiario > 0 ? ((diferencia / consumoDiario) * 100).toFixed(1) : 0;
+            
+            document.getElementById('comp_consumo_req').innerText = `${consumoDiario.toFixed(2)} kWh/día`;
+            document.getElementById('comp_generacion_diaria').innerText = `${energiaDiariaGenerada.toFixed(2)} kWh/día`;
+            
+            if (diferencia >= 0) {
+                document.getElementById('comp_diferencia').innerHTML = `<span class="ok">+${diferencia.toFixed(2)} kWh/día (${diferenciaPorcentaje}% EXCESO) ✓</span>`;
+            } else {
+                document.getElementById('comp_diferencia').innerHTML = `<span class="error">${diferencia.toFixed(2)} kWh/día (${diferenciaPorcentaje}% DÉFICIT) ✗</span>`;
+            }
+
+            document.getElementById('comp_potencia_req').innerText = `${potenciaPico.toFixed(0)} W`;
+            document.getElementById('comp_potencia_disp').innerText = `${potenciaTotalInstalada.toFixed(0)} W`;
+            document.getElementById('comp_potencia_inv').innerText = `${potenciaInversor.toFixed(0)} W`;
+
+            if (potenciaInversor >= potenciaPico * 1.25) {
+                document.getElementById('comp_inv_estado').innerHTML = `<span class="ok">✓ SUFICIENTE</span>`;
+            } else if (potenciaInversor >= potenciaPico) {
+                document.getElementById('comp_inv_estado').innerHTML = `<span class="warning">⚠ LÍMITE MÍNIMO</span>`;
+            } else {
+                document.getElementById('comp_inv_estado').innerHTML = `<span class="error">✗ INSUFICIENTE</span>`;
+            }
+
+            let veredicto = "";
+            let veredictStyle = "";
+
+            const energiaSuficiente = energiaDiariaGenerada >= consumoDiario * 0.95;
+            const potenciaSuficiente = potenciaTotalInstalada >= potenciaPico * 0.8;
+            const inversorsuficiente = potenciaInversor >= potenciaPico * 1.25;
+
+            if (energiaSuficiente && potenciaSuficiente && inversorsuficiente) {
+                veredicto = "✓✓✓ SISTEMA COMPLETAMENTE VIABLE";
+                veredictStyle = "ok";
+            } else if (energiaSuficiente && potenciaSuficiente) {
+                veredicto = "✓✓ SISTEMA VIABLE - Pero inversor en límite";
+                veredictStyle = "warning";
+            } else if (energiaSuficiente) {
+                veredicto = "⚠ GENERACIÓN OK - Pero potencia insuficiente";
+                veredictStyle = "warning";
+            } else {
+                veredicto = "✗ SISTEMA NO VIABLE - Insuficiente generación";
+                veredictStyle = "error";
+            }
+
+            document.getElementById('veredicto_final').innerHTML = `<strong style="color: ${veredictStyle === 'ok' ? 'var(--success)' : veredictStyle === 'error' ? 'var(--danger)' : 'var(--warning)'};">${veredicto}</strong>`;
+
+            let detalles = "";
+            if (!energiaSuficiente) {
+                const panelesFaltantes = Math.ceil((consumoDiario * 1000) / (potenciaPanel * hsp * rendimiento)) - cantidadPaneles;
+                detalles += `<br><small>Necesitarías ${panelesFaltantes} paneles más para cubrir la demanda energética.</small>`;
+            }
+
+            if (!potenciaSuficiente) {
+                const potenciaFaltante = potenciaPico - potenciaTotalInstalada;
+                detalles += `<br><small>Faltan ${potenciaFaltante.toFixed(0)} W de potencia instalada.</small>`;
+            }
+
+            if (!inversorsuficiente) {
+                const potenciaInvNecesaria = Math.ceil((potenciaPico * 1.25 / 500) + 1) * 500;
+                detalles += `<br><small>Tu inversor actual es insuficiente. Necesitas mínimo ${potenciaInvNecesaria} W.</small>`;
+            }
+
+            document.getElementById('veredicto_final').innerHTML += detalles;
+        }
+
+        // ============================================================
+        // MÓDULOS 7, 8 y 9: PROTECCIONES, CABLES Y ESTRUCTURA
+        // ============================================================
+        function obtenerEquivalenteAWG(mm2) {
+            if (mm2 <= 2.5) return "14 AWG";
+            if (mm2 <= 4.0) return "12 AWG";
+            if (mm2 <= 6.0) return "10 AWG (Cable Solar Std)";
+            if (mm2 <= 10.0) return "8 AWG";
+            if (mm2 <= 16.0) return "6 AWG";
+            if (mm2 <= 25.0) return "4 AWG";
+            if (mm2 <= 35.0) return "2 AWG";
+            if (mm2 <= 50.0) return "1/0 AWG";
+            if (mm2 <= 70.0) return "2/0 AWG";
+            return "4/0 AWG o superior";
+        }
+
+        function ejecutarIngenieriaFinal() {
+            const isc = parseFloat(document.getElementById('sys_isc').value) || 0;
+            const vBanco = parseInt(document.getElementById('sys_v_banco').value);
+            const pInv = parseFloat(document.getElementById('sys_potencia_inv').value) || 0;
+            const longitudFv = parseFloat(document.getElementById('dist_paneles_mppt').value) || 10;
+            const latitud = parseFloat(document.getElementById('latitud_sitio').value) || 0;
+            const tipoTecho = document.getElementById('tipo_superficie').value;
+
+            if (isc <= 0 || pInv <= 0) {
+                alert("Por favor introduce los datos eléctricos obligatorios.");
+                return;
+            }
+
+            const corrienteBreakerFv = isc * 1.56;
+            let breakerFvComercial = Math.ceil(corrienteBreakerFv / 5) * 5;
+            if (breakerFvComercial < 10) breakerFvComercial = 10;
+
+            const corrienteMaxBat = (pInv / vBanco) * 1.25;
+            let fusibleBatComercial = Math.ceil(corrienteMaxBat / 25) * 25;
+            if (fusibleBatComercial < 40) fusibleBatComercial = 40;
+
+            const corrienteAcSalida = (pInv / 120) * 1.25;
+            let breakerAcComercial = Math.ceil(corrienteAcSalida / 5) * 5;
+
+            document.getElementById('prot_breaker_fv').innerText = `${breakerFvComercial} A (DC - 2 Polos)`;
+            document.getElementById('prot_fusible_bat').innerText = `${fusibleBatComercial} A (Tipo ANL / Alta Ruptura)`;
+            document.getElementById('prot_breaker_ac').innerText = `${breakerAcComercial} A (AC - Monofásico)`;
+
+            const rhoCobre = 0.0172;
+            const caidaMaxAdmitidaVoltios = (vBanco * 0.02);
+
+            const seccionFvMm2 = (2 * rhoCobre * longitudFv * isc) / caidaMaxAdmitidaVoltios;
+            const seccionFvFinal = Math.max(seccionFvMm2, 4.0);
+
+            const longBat = 2.0;
+            const seccionBatMm2 = (2 * rhoCobre * longBat * (pInv / vBanco)) / (vBanco * 0.015);
+            const seccionBatFinal = Math.max(seccionBatMm2, 16.0);
+
+            document.getElementById('cable_fv_mm').innerText = `${seccionFvFinal.toFixed(2)} mm²`;
+            document.getElementById('cable_fv_awg').innerText = obtenerEquivalenteAWG(seccionFvFinal);
+            document.getElementById('cable_bat_mm').innerText = `${seccionBatFinal.toFixed(2)} mm²`;
+            document.getElementById('cable_bat_awg').innerText = obtenerEquivalenteAWG(seccionBatFinal);
+
+            let anguloOptimo = Math.abs(latitud) + 5;
+            if (anguloOptimo < 10) anguloOptimo = 10;
+
+            let recomendacionAnclaje = "";
+            if (tipoTecho === "plano_concreto") {
+                recomendacionAnclaje = "Triángulos de Aluminio Anodizado fijados mediante pernos de expansión mecánicos o bloques contrapeso de hormigón (sin perforar).";
+            } else if (tipoTecho === "teja_metalica") {
+                recomendacionAnclaje = "Rieles de aluminio fijados con soportes tipo L-Feet o pinzas estructurales directo a las correas/perfiles del techo.";
+            } else {
+                recomendacionAnclaje = "Estructura tipo Hincada en Suelo o soportes monoposte con zapatas de concreto enterradas.";
+            }
+
+            document.getElementById('est_angulo').innerText = `${anguloOptimo.toFixed(1)}°`;
+            document.getElementById('est_anclaje').innerText = recomendacionAnclaje;
+        }
+
+        // ============================================================
+        // MÓDULOS 10-13: REPORTE TÉCNICO FINAL
+        // ============================================================
+        function generarReporteFinal() {
+            const costo = parseFloat(document.getElementById('fin_costo_total').value) || 0;
+            const ahorroMensual = parseFloat(document.getElementById('fin_ahorro_mensual').value) || 0;
+            const factorSombra = document.getElementById('sombra_factor').value;
+            const cliente = document.getElementById('rep_cliente').value;
+            const freqMaint = document.getElementById('maint_frecuencia').value;
+            const obsMaint = document.getElementById('maint_observaciones').value;
+
+            if (costo <= 0 || ahorroMensual <= 0) {
+                alert("Por favor introduce valores financieros válidos.");
+                return;
+            }
+
+            const ahorroAnual = ahorroMensual * 12;
+            const tiempoRetornoAnos = costo / ahorroAnual;
+            
+            let textoRetorno = "";
+            if (tiempoRetornoAnos < 1) {
+                textoRetorno = `${(tiempoRetornoAnos * 12).toFixed(1)} Meses`;
+            } else {
+                textoRetorno = `${tiempoRetornoAnos.toFixed(1)} Años`;
+            }
+
+            document.getElementById('r_cliente').innerText = cliente;
+            document.getElementById('r_fecha').innerText = new Date().toLocaleDateString();
+            document.getElementById('r_costo').innerText = `$${costo.toLocaleString()}`;
+            document.getElementById('r_ahorro_anual').innerText = `$${ahorroAnual.toLocaleString()} / año`;
+            document.getElementById('r_roi').innerText = textoRetorno;
+            
+            document.getElementById('r_sombra_porc').innerText = factorSombra === "0" ? "0% - Rendimiento Óptimo" : `${factorSombra}% de degradación potencial`;
+            document.getElementById('r_maint_freq').innerText = freqMaint;
+            document.getElementById('r_maint_obs').innerText = obsMaint;
+
+            document.getElementById('reporteSeccionFisica').style.display = "block";
+            document.getElementById('reporteSeccionFisica').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ============================================================
+        // INICIALIZACIÓN AL CARGAR LA PÁGINA
+        // ============================================================
+        window.onload = function() {
+            actualizarVoltajes();
+            document.getElementById('voltaje').value = "120";
+            recalcularYRenderizar();
+            actualizarDatosEnlazados();
+        };
+    </script>
+</body>
+</html>
